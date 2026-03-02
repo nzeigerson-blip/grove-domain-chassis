@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+logging:
+  level:
+    com.grove: INFO
+    root: WARN
+
+management:
+  endpoint:
+    health:
+      show-details: never

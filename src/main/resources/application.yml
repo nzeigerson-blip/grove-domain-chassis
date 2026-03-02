@@ -1,0 +1,75 @@
+grove:
+  domain:
+    name: ${GROVE_DOMAIN_NAME:sample}
+
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: grove-${grove.domain.name}
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:grove_sample}
+    username: ${DB_USERNAME:grove}
+    password: ${DB_PASSWORD:grove}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: public
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: grove-${grove.domain.name}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH_ISSUER_URI:https://auth.grove.io}
+          jwk-set-uri: ${OAUTH_JWK_SET_URI:https://auth.grove.io/.well-known/jwks.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: grove-${grove.domain.name}
+
+otel:
+  service:
+    name: grove-${grove.domain.name}
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_ENDPOINT:http://localhost:4318}
