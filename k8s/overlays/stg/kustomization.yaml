@@ -1,0 +1,52 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: grove
+
+commonLabels:
+  environment: stg
+
+resources:
+  - ../../base
+
+patches:
+  # STG: medium resources, 2 replicas
+  - target:
+      kind: Deployment
+      name: grove-domain
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 250m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 512Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 1000m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 1Gi
+
+  # STG: HPA scales 2-4
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: grove-domain
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 2
+      - op: replace
+        path: /spec/maxReplicas
+        value: 4
+
+configMapGenerator:
+  - name: grove-domain-config
+    behavior: merge
+    literals:
+      - SPRING_PROFILES_ACTIVE=stg
+      - OAUTH_ISSUER_URI=https://auth-stg.grove.io/realms/grove-stg
+      - OAUTH_JWK_SET_URI=https://auth-stg.grove.io/realms/grove-stg/protocol/openid-connect/certs

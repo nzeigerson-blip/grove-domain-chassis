@@ -1,0 +1,159 @@
+name: Deploy — Build Image & Deploy to K8s
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - stg
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-west-2
+  JAVA_VERSION: '21'
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.image-tag }}
+      image-uri: ${{ steps.meta.outputs.image-uri }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract metadata
+        id: meta
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          IMAGE_TAG="${GITHUB_SHA::8}-$(date +%Y%m%d%H%M%S)"
+          IMAGE_URI="${ECR_REGISTRY}/grove/${DOMAIN_NAME}:${IMAGE_TAG}"
+          echo "image-tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image-uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image-uri }}
+            ${{ steps.ecr-login.outputs.registry }}/grove/${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}:latest
+
+  deploy-dev:
+    name: Deploy to DEV
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name grove-dev \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Deploy with Kustomize
+        env:
+          IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          cd k8s/overlays/dev
+          kustomize edit set image grove-domain=${IMAGE_URI}
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for rollout
+        env:
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          kubectl rollout status deployment/${DOMAIN_NAME} \
+            -n grove --timeout=300s
+
+      - name: Verify health
+        env:
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app=${DOMAIN_NAME} \
+            -n grove --timeout=120s
+
+  deploy-stg:
+    name: Deploy to STG
+    needs: [build-and-push, deploy-dev]
+    runs-on: ubuntu-latest
+    environment:
+      name: stg
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name grove-stg \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Deploy with Kustomize
+        env:
+          IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          cd k8s/overlays/stg
+          kustomize edit set image grove-domain=${IMAGE_URI}
+          kustomize build . | kubectl apply -f -
+
+      - name: Wait for rollout
+        env:
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          kubectl rollout status deployment/${DOMAIN_NAME} \
+            -n grove --timeout=300s
+
+      - name: Verify health
+        env:
+          DOMAIN_NAME: ${{ vars.GROVE_DOMAIN_NAME || 'domain-chassis' }}
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app=${DOMAIN_NAME} \
+            -n grove --timeout=120s

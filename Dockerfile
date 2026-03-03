@@ -1,10 +1,29 @@
+# ── Stage 1: Build ──────────────────────────────────────────────
+FROM eclipse-temurin:21-jdk-alpine AS build
+
+WORKDIR /workspace
+
+# Cache Gradle wrapper
+COPY gradle/ gradle/
+COPY gradlew .
+RUN chmod +x gradlew && ./gradlew --version
+
+# Cache dependencies
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+RUN ./gradlew dependencies --no-daemon || true
+
+# Build application
+COPY src/ src/
+RUN ./gradlew bootJar --no-daemon -x test
+
+# ── Stage 2: Runtime ───────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine AS runtime
 
 RUN addgroup --system grove && adduser --system --ingroup grove grove
 
 WORKDIR /app
 
-COPY build/libs/*.jar app.jar
+COPY --from=build /workspace/build/libs/*.jar app.jar
 
 RUN chown -R grove:grove /app
 USER grove

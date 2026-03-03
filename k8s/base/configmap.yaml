@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grove-domain-config
+  namespace: grove
+data:
+  GROVE_DOMAIN_NAME: "sample"
+  SPRING_PROFILES_ACTIVE: "dev"
+  OAUTH_ISSUER_URI: "https://auth.grove.io"
+  OAUTH_JWK_SET_URI: "https://auth.grove.io/.well-known/jwks.json"
+  OTEL_EXPORTER_ENDPOINT: "http://otel-collector.observability:4318"

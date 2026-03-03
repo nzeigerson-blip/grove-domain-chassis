@@ -1,0 +1,54 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: grove
+
+namePrefix: ""
+
+commonLabels:
+  environment: dev
+
+resources:
+  - ../../base
+
+patches:
+  # DEV: low resources, single replica
+  - target:
+      kind: Deployment
+      name: grove-domain
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 100m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 256Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: 500m
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 512Mi
+
+  # DEV: HPA scales 1-2
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: grove-domain
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2
+
+configMapGenerator:
+  - name: grove-domain-config
+    behavior: merge
+    literals:
+      - SPRING_PROFILES_ACTIVE=dev
+      - OAUTH_ISSUER_URI=http://keycloak.grove-dev:8180/realms/grove-dev
+      - OAUTH_JWK_SET_URI=http://keycloak.grove-dev:8180/realms/grove-dev/protocol/openid-connect/certs
