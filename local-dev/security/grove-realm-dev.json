@@ -1,0 +1,146 @@
+{
+  "realm": "grove-dev",
+  "enabled": true,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "accessTokenLifespan": 300,
+  "refreshTokenMaxReuse": 0,
+  "bruteForceProtected": false,
+  "passwordPolicy": "length(8)",
+  "roles": {
+    "realm": [
+      { "name": "ADMIN", "description": "Platform administrator" },
+      { "name": "MANAGER", "description": "Domain manager" },
+      { "name": "USER", "description": "Standard authenticated user" },
+      { "name": "AUDITOR", "description": "Read-only compliance auditor" },
+      { "name": "SERVICE", "description": "Machine-to-machine service account" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "grove-api",
+      "description": "Access to Grove platform APIs",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "domain-access",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "claim.name": "domain_access",
+            "user.attribute": "domain_access",
+            "jsonType.label": "JSON",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "grove-bff",
+      "name": "Grove BFF (Backend for Frontend)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "grove-dev-bff-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "defaultClientScopes": ["openid", "profile", "email", "grove-api"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      }
+    },
+    {
+      "clientId": "grove-api-gateway",
+      "name": "Grove API Gateway",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "grove-dev-gateway-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["openid", "grove-api"]
+    },
+    {
+      "clientId": "grove-service-account",
+      "name": "Grove Service-to-Service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "grove-dev-service-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["openid", "grove-api"],
+      "attributes": {
+        "access.token.lifespan": "60"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@grove.io",
+      "email": "admin@grove.io",
+      "enabled": true,
+      "firstName": "Grove",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN", "USER"]
+    },
+    {
+      "username": "user@grove.io",
+      "email": "user@grove.io",
+      "enabled": true,
+      "firstName": "Grove",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "user",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["USER"]
+    },
+    {
+      "username": "auditor@grove.io",
+      "email": "auditor@grove.io",
+      "enabled": true,
+      "firstName": "Grove",
+      "lastName": "Auditor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "auditor",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["AUDITOR", "USER"]
+    }
+  ]
+}
