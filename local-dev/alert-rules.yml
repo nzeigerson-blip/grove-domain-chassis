@@ -1,0 +1,24 @@
+# Simplified alert rules for local development / smoke testing
+groups:
+  - name: grove.local.alerts
+    rules:
+      - alert: ServiceDown
+        expr: up{job="grove-domains"} == 0
+        for: 1m
+        labels:
+          severity: P1
+        annotations:
+          summary: "Service {{ $labels.app }} is down"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (app)
+            /
+            sum(rate(http_server_requests_seconds_count[5m])) by (app)
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: P1
+        annotations:
+          summary: "High 5xx error rate on {{ $labels.app }}"
