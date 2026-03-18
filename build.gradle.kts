@@ -44,6 +44,10 @@ dependencies {
     // Kafka
     implementation("org.springframework.kafka:spring-kafka")
 
+    // Cache — Valkey (Redis-compatible, Apache 2.0 licensed)
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+
     // Observability — OpenTelemetry + Micrometer
     implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter:$openTelemetryVersion")
     implementation("io.micrometer:micrometer-registry-prometheus")

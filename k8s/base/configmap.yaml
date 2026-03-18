@@ -9,3 +9,13 @@ data:
   OAUTH_ISSUER_URI: "https://auth.grove.io"
   OAUTH_JWK_SET_URI: "https://auth.grove.io/.well-known/jwks.json"
   OTEL_EXPORTER_ENDPOINT: "http://otel-collector.observability:4318"
+  # Kafka configuration
+  KAFKA_BOOTSTRAP_SERVERS: "grove-kafka.grove:9092"
+  KAFKA_TOPIC_PARTITIONS: "6"
+  KAFKA_TOPIC_REPLICATION_FACTOR: "1"
+  KAFKA_CONSUMER_MAX_RETRIES: "3"
+  KAFKA_CONSUMER_RETRY_BACKOFF_MS: "1000"
+  # Valkey cache configuration
+  VALKEY_HOST: "grove-valkey.grove"
+  VALKEY_PORT: "6379"
+  VALKEY_TTL_MINUTES: "60"

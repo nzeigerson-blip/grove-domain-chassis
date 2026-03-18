@@ -1,6 +1,19 @@
 grove:
   domain:
     name: ${GROVE_DOMAIN_NAME:sample}
+  cache:
+    host: ${VALKEY_HOST:localhost}
+    port: ${VALKEY_PORT:6379}
+    default-ttl-minutes: ${VALKEY_TTL_MINUTES:60}
+  kafka:
+    topic:
+      default-partitions: ${KAFKA_TOPIC_PARTITIONS:6}
+      default-replication-factor: ${KAFKA_TOPIC_REPLICATION_FACTOR:1}
+    consumer:
+      max-retries: ${KAFKA_CONSUMER_MAX_RETRIES:3}
+      retry-backoff-ms: ${KAFKA_CONSUMER_RETRY_BACKOFF_MS:1000}
+    dlq:
+      topics: ${KAFKA_DLQ_TOPICS:sample-item-created.dlq}
 
 server:
   port: 8080
