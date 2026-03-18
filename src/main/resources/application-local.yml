@@ -1,0 +1,14 @@
+spring:
+  datasource: { url: "jdbc:postgresql://localhost:5432/grove_chassis", username: grove, password: grove-local-dev }
+  jpa.hibernate.ddl-auto: validate
+  flyway.enabled: true
+  kafka: { bootstrap-servers: "localhost:29092", consumer: { group-id: chassis-sample, auto-offset-reset: earliest, enable-auto-commit: false }, producer: { acks: all, properties: { enable.idempotence: true } } }
+  security.oauth2.resourceserver.jwt: { issuer-uri: "http://localhost:8180/realms/grove", jwk-set-uri: "http://localhost:8180/realms/grove/protocol/openid-connect/certs" }
+  data.redis: { host: localhost, port: 6379 }
+
+grove: { domain.name: chassis-sample, vault: { address: "http://localhost:8200", token: grove-dev-token }, kafka.consumer: { max-retries: 3, retry-backoff-ms: 1000 } }
+
+server.port: 8082
+management: { server.port: 9090, endpoints.web.exposure.include: "health,info,prometheus,metrics", metrics.export.prometheus.enabled: true }
+logging: { level: { com.grove: DEBUG, org.springframework.security: DEBUG }, pattern.console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" }
+otel.sdk.disabled: true

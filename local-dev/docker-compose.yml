@@ -53,9 +53,9 @@ services:
       retries: 10
       start_period: 30s
 
-  # ─── Valkey 7.2 (Apache 2.0 — NOT Redis Ltd) ───
+  # ─── Valkey 8 (Apache 2.0 — NOT Redis Ltd) ───
   valkey:
-    image: valkey/valkey:7.2-alpine
+    image: valkey/valkey:8-alpine
     container_name: grove-valkey
     ports:
       - "6379:6379"

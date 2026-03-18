@@ -1,6 +1,8 @@
+val springBootVersion: String by project
+
 plugins {
     java
-    id("org.springframework.boot") version "${property("springBootVersion")}"
+    id("org.springframework.boot") version "3.4.3"
     id("io.spring.dependency-management") version "1.1.7"
     jacoco
 }

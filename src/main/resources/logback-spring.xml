@@ -22,7 +22,7 @@
     </appender>
 
     <!-- Plain text for local development convenience -->
-    <springProfile name="default">
+    <springProfile name="default | local">
         <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>

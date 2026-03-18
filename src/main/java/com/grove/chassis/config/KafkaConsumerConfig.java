@@ -3,7 +3,6 @@ package com.grove.chassis.config;
 import com.grove.chassis.event.EventEnvelope;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +25,7 @@ import java.util.Map;
  * Includes Dead Letter Queue (DLQ) routing for poison messages.
  *
  * Error handling strategy:
- *   1. Retry 3 times with 1-second backoff
+ *   1. Retry up to maxRetries times with fixed backoff
  *   2. On exhausted retries, publish to DLQ topic ({original-topic}.dlq)
  *   3. Log poison message details for investigation
  */
